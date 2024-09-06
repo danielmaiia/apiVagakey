@@ -4,13 +4,12 @@ const userController = require ("../controller/user-controller");
 
 //Criação de usuário
 router.post("/create", userController.postUser);
-//Criação de usuário
+//Autenticação de usuário
 router.post("/login", userController.auth);
-//Criação de usuário
-// router.post("/update", userController.pupdateUser);
-// //Criação de usuário
-// router.post("/delete", userController.deleteUser);
-// //Criação de usuário
-// router.post("/list", userController.listUser);
+//Atualização de usuário
+router.post("/update", userController.updateUser);
+// //Deleção de usuário
+router.post("/delete", userController.deleteUser);
+
 
 module.exports = router;

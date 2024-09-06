@@ -85,3 +85,54 @@ exports.auth = async (req, res) => {
         res.status(400).send({ message: error});
     }
 }
+
+//função updateUser
+
+exports.updateUser = async (req, res) => {
+    try {
+        const query = `UPDATE Usuario SET Nome = ?, Telefone = ? WHERE Email = ?`;
+        const response = await mysql.execute(query, [req.body.name, req.body.telefone, req.body.email]);
+
+        if (response.affectedRows === 0) {
+            return res.status(404).send({ message: "Usuário não encontrado" });
+        }
+
+        res.status(200).send({ message: "Usuário atualizado com sucesso" });
+    } catch (error) {
+        res.status(500).send({ message: "Erro ao atualizar usuário", error });
+    }
+};
+
+//função deleteUser
+
+exports.deleteUser = async (req, res) => {
+    try {
+        const query = `DELETE FROM Usuario WHERE Email = ?`;
+        const response = await mysql.execute(query, [req.body.email]);
+
+        if (response.affectedRows === 0) {
+            return res.status(404).send({ message: "Usuário não encontrado" });
+        }
+
+        res.status(200).send({ message: "Usuário deletado com sucesso" });
+    } catch (error) {
+        res.status(500).send({ message: "Erro ao deletar usuário", error });
+    }
+};
+
+//buscar usuario por email
+
+exports.getUserByEmail = async (req, res) => {
+    try {
+        const query = `SELECT * FROM Usuario WHERE Email = ?`;
+        const user = await mysql.execute(query, [req.params.email]);
+
+        if (user.length === 0) {
+            return res.status(404).send({ message: "Usuário não encontrado" });
+        }
+
+        res.status(200).send(user[0]);
+    } catch (error) {
+        res.status(500).send({ message: "Erro ao buscar usuário", error });
+    }
+};
