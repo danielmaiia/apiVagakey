@@ -5,6 +5,28 @@ Esta API é responsável pelo gerenciamento de usuários, estacionamentos e rese
 `http://localhost:3000`
 
 ---
+## Gerenciamento de Usuários e Autenticação
+
+### 1. Gerenciamento de Usuários
+O gerenciamento de usuários na API VagaKey utiliza **MySQL** como banco de dados para armazenar as informações dos usuários, e **bcrypt** para garantir a segurança das senhas.
+
+- **Criação de Usuário**: Ao criar um usuário, a senha fornecida é criptografada usando **bcrypt** e armazenada no banco de dados.
+- **Atualização de Usuário**: Um usuário pode atualizar suas informações como nome e telefone. As atualizações são feitas com base no email do usuário.
+- **Deletar Usuário**: Um usuário pode ser deletado do sistema, utilizando o email como identificador.
+- **Buscar Usuário**: É possível buscar informações de um usuário pelo email.
+
+### 2. Autenticação
+A autenticação de usuários na API é feita usando **JWT (JSON Web Tokens)**. Aqui está o fluxo básico:
+
+- **Login de Usuário**: Durante o login, a senha fornecida é comparada com o hash armazenado no banco de dados usando **bcrypt**. Se a senha for válida, um **token JWT** é gerado e enviado ao cliente.
+- **Token JWT**: O token JWT contém informações como o email do usuário e tem uma validade configurada (10 horas). Ele é assinado com uma chave secreta.
+- **Acesso Protegido**: O token JWT deve ser incluído no cabeçalho das requisições às rotas protegidas da API para que o acesso seja concedido. O servidor valida o token antes de permitir o acesso.
+
+### Bibliotecas Utilizadas:
+- **bcrypt**: Para criptografia das senhas dos usuários.
+- **jsonwebtoken (JWT)**: Para geração de tokens JWT usados na autenticação.
+
+---
 
 ## Usuários
 ### 1. Criar Usuário
