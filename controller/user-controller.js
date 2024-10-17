@@ -1,7 +1,8 @@
 const mysql = require("../mysql");
 const bcrypt = require ("bcrypt");
 const jwt = require ("jsonwebtoken");
-const jwtSecret = "projetoVagaKey"
+// const jwtSecret = "projetoVagaKey"
+const jwtSecret = process.env.JWT_Secret || "defaultSecret";
 
 //cria usuário
 exports.postUser = async(req, res) => {
