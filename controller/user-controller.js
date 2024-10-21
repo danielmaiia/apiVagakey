@@ -1,50 +1,50 @@
-const mysql = require("../mysql");
+const oracleDb = require("../oracle");
 const bcrypt = require ("bcrypt");
 const jwt = require ("jsonwebtoken");
+// const { response } = require("../app");
 // const jwtSecret = "projetoVagaKey"
 const jwtSecret = process.env.JWT_Secret || "defaultSecret";
 
 //cria usuário
-exports.postUser = async(req, res) => {
-
+exports.postUser = async (req, res) => {
     try {
-        //consulta a existência do usuário no db
-        const query = `SELECT * FROM Usuario WHERE Email = ?`;
-        const user = await mysql.execute(query, [req.body.email]);
+        console.log('Requisição recebida no POST /user/create:', req.body);
 
-        if (user.length === 0) { 
-            // Se o usuário não existir, criptografamos a senha e inserimos o usuário
-            bcrypt.hash(req.body.password, 10, async (error, hash) => {
+        // Consulta a existência do usuário no banco de dados
+        const query = `SELECT * FROM usuario WHERE email = :email`;
+        const user = await oracleDb.execute(query, { email: req.body.email });
+
+        if (user.rows.length === 0) {
+            // Criptografar a senha e inserir o usuário usando a procedure
+            bcrypt.hash(req.body.senha, 10, async (error, hash) => {
                 if (error) {
                     return res.status(500).send({ message: "Erro ao gerar hash da senha" });
                 }
 
                 const insertQuery = `
-                    INSERT INTO Usuario (Nome, Email, Senha, Telefone, TipoUsuario, DataCriacao)
-                    VALUES (?, ?, ?, ?, ?, NOW())
+                    BEGIN
+                        inserir_usuario(:nome, :email, :senha, :telefone);
+                    END;
                 `;
+                const response = await oracleDb.execute(insertQuery, {
+                    nome: req.body.nome,
+                    email: req.body.email,
+                    senha: hash,  // Salva o hash da senha no banco de dados
+                    telefone: req.body.telefone
+                });
 
-                try {
-                    const response = await mysql.execute(insertQuery, [
-                        req.body.name,
-                        req.body.email,
-                        hash,
-                        req.body.telefone,
-                        req.body.tipousuario
-                    ]);
-                    res.status(201).send({ message: "Usuário criado com sucesso", data: response });
-                } catch (insertError) {
-                    res.status(500).send({ message: "Erro ao inserir usuário", error: insertError });
-                }
+                res.status(201).send({ message: "Usuário criado com sucesso", data: response });
             });
         } else {
             res.status(400).send({ message: "Usuário já existe" });
         }
     } catch (error) {
-        console.log("Error", error);
+        console.log("Erro ao executar a query", error);
         res.status(500).send({ message: "Erro no servidor", error });
     }
 };
+
+
 
 //função login
 
@@ -52,49 +52,50 @@ exports.auth = async (req, res) => {
 
     try {
         
-        var password = req.body.password
+        var password = req.body.senha
         //consulta a existência do usuário no db
-         const query = `SELECT * FROM Usuario WHERE Email = ?`;
-         const user = await mysql.execute(query, [req.body.email]); 
+         const query = `SELECT * FROM usuario WHERE email = :email`;
+         const user = await oracleDb.execute(query, { email: req.body.email }); 
 
-         if (user.length > 0) {
-            bcrypt.compare(password, user[0].Senha).then(async(result)=>{
-                if (result){
-                    jwt.sign({
-                        "email": user[0].Email
-                    },
-                    jwtSecret,
-                    {expiresIn: "10h"},(error, token) => {
-                        if (error){
-                            res.json(error)
-                        } else {
-                            res.status(200)
-                            res.json({
-                                token: token,
-                                Nome: user[0].Nome,
-                                Email: user[0].Email,
-                                Telefone: user[0].Telefone,
-                                tipousuario: user[0].TipoUsuario
-                            })
-                        }
-                    }
-                ) 
-                }else{res.status(400).send({ message: "Senha incorreta" });}
-            })
-         }
-    }   catch (error){
-        res.status(400).send({ message: error});
+         if (user.rows.length > 0) {
+            bcrypt.compare(req.body.senha, user.rows[0].SENHA).then(async (result) => {
+                if (result) {
+                    const token = jwt.sign({
+                        id_usuario: user.rows[0].ID_USUARIO,
+                        email: user.rows[0].EMAIL
+                    }, process.env.JWT_SECRET || 'defaultSecret', { expiresIn: '10h' });
+
+                    res.status(200).json({
+                        token: token,
+                        nome: user.rows[0].NOME,
+                        email: user.rows[0].EMAIL,
+                        telefone: user.rows[0].TELEFONE
+                    });
+
+                } else {
+                    res.status(400).send({ message: "Senha incorreta" });
+                }
+            });
+        } else {
+            res.status(404).send({ message: "Usuário não encontrado" });
+        }
+    } catch (error) {
+        res.status(500).send({ message: error });
     }
-}
+};
 
 //função updateUser
 
 exports.updateUser = async (req, res) => {
     try {
-        const query = `UPDATE Usuario SET Nome = ?, Telefone = ? WHERE Email = ?`;
-        const response = await mysql.execute(query, [req.body.name, req.body.telefone, req.body.email]);
+        const query = `UPDATE usuario SET nome = :nome, telefone = :telefone WHERE email = :email`;
+        const response = await oracleDb.execute(query, {
+            nome: req.body.name,
+            telefone: req.body.telefone,
+            email: req.body.email
+        });
 
-        if (response.affectedRows === 0) {
+        if (response.rowsAffected === 0) {
             return res.status(404).send({ message: "Usuário não encontrado" });
         }
 
@@ -104,14 +105,15 @@ exports.updateUser = async (req, res) => {
     }
 };
 
+
 //função deleteUser
 
 exports.deleteUser = async (req, res) => {
     try {
-        const query = `DELETE FROM Usuario WHERE Email = ?`;
-        const response = await mysql.execute(query, [req.body.email]);
+        const query = `DELETE FROM usuario WHERE email = :email`;
+        const response = await oracleDb.execute(query, { email: req.body.email });
 
-        if (response.affectedRows === 0) {
+        if (response.rowsAffected === 0) {
             return res.status(404).send({ message: "Usuário não encontrado" });
         }
 
@@ -121,12 +123,13 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
+
 //buscar usuario por email
 
 exports.getUserByEmail = async (req, res) => {
     try {
-        const query = `SELECT * FROM Usuario WHERE Email = ?`;
-        const user = await mysql.execute(query, [req.params.email]);
+        const query = `SELECT * FROM usuario WHERE email = :email`;
+        const response = await oracleDb.execute(query, { email: req.body.email });
 
         if (user.length === 0) {
             return res.status(404).send({ message: "Usuário não encontrado" });

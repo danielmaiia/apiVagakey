@@ -1,13 +1,14 @@
-const mysql = require("../mysql");
+const oracleDb = require("../oracle");
 
 exports.get = async(req, res) => {
     try {
-        const query = `select * from Usuario 
-        `
-        const response = await mysql.execute(query)
+        const query = `SELECT * from USUARIO`;
+        const response = await oracleDb.execute(query)
         console.log(response);
         res.send(response);
+    } catch (error) {
+        console.log("Error",error);
+        res.status(500).send({message: "Erro ao buscar dados", error});
     }
-    catch (error) {console.log("Error",error)}
 };
 

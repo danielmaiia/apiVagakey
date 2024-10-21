@@ -19,6 +19,7 @@
     "firebase": "^10.13.1",
     "http": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
-    "mysql": "^2.18.1"
+    "mysql": "^2.18.1",
+    "oracledb": "^6.6.0"
   }
 }
